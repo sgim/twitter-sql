@@ -7,7 +7,6 @@ var Tweet = tweetBank.Tweet, User = tweetBank.User;
 
 module.exports = function makeRouterWithSockets (io) {
 
-  var loggedIn = false, userID;
   // a reusable function
   function respondWithAllTweets (req, res, next){
     Tweet.findAll({
@@ -29,7 +28,7 @@ module.exports = function makeRouterWithSockets (io) {
   router.get('/login', function (req, res) {
 	  User.findAndCountAll()
 		.then(function (users) {
-			userID = Math.random() * users.count + 1 | 0;
+			var userID = Math.random() * users.count + 1 | 0;
       req.session.user = users.rows[userID];
 			console.log(req.session.user);
       req.session.loggedIn = !req.session.loggedIn;
@@ -70,7 +69,7 @@ module.exports = function makeRouterWithSockets (io) {
 			res.render('index', {
 				title: 'Twitter.js',
 				tweets: tweets,
-				showForm: loggedIn,
+				//showForm: loggedIn,
 			});
 		});
   });
@@ -115,9 +114,6 @@ module.exports = function makeRouterWithSockets (io) {
 			});
       res.redirect('/');
 		});
-
-
-
   });
 
   // // replaced this hard-coded route with general static routing in app.js
