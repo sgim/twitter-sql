@@ -1,8 +1,10 @@
 var Sequelize = require("sequelize");
-
 var twitterjsDB = new Sequelize("twitterjs", "root", null, {
   dialect: "sqlite",
+	// path shouldn't be hard coded - should use an environment path
+	//storage: process.env.DB_PATH
 	storage: "../databases/twitterjs.db",
+	logging: false
 });
 
 twitterjsDB
