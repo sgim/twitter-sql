@@ -19,6 +19,17 @@ swig.setDefaults({ cache: false });
 // logging middleware
 app.use(morgan('dev'));
 
+var session = require("express-session");
+var FileStore = require("session-file-store")(session);
+app.use(session({
+	name: "server-session-cookie-id",
+	secret: "just fucking work",
+	saveUninitialized: true,
+	resave: true,
+	store: new FileStore()
+}));
+
+
 // body parsing middleware
 app.use(bodyParser.urlencoded({ extended: true })); // for HTML form submits
 app.use(bodyParser.json()); // would be for AJAX requests

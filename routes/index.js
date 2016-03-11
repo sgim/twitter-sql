@@ -7,39 +7,54 @@ var Tweet = tweetBank.Tweet, User = tweetBank.User;
 
 module.exports = function makeRouterWithSockets (io) {
 
+  var loggedIn = false, userID;
   // a reusable function
   function respondWithAllTweets (req, res, next){
     Tweet.findAll({
 			include: [User]
 		})
 		.then(function (tweets) {
-			res.render('index', {
+			res.render(req.session.loggedIn ? 'user': "index", {
 				title: 'Twitter.js',
 				tweets: tweets,
-				showForm: true
+				user: req.session.user
 			});
 		});
   }
+  
 
   // here we basically treet the root view and tweets view as identical
   router.get('/', respondWithAllTweets);
   router.get('/tweets', respondWithAllTweets);
+  router.get('/login', function (req, res) {
+	  User.findAndCountAll()
+		.then(function (users) {
+			userID = Math.random() * users.count + 1 | 0;
+      req.session.user = users.rows[userID];
+			console.log(req.session.user);
+      req.session.loggedIn = !req.session.loggedIn;
+      res.redirect('/');
+
+		});
+	});
 
   // single-user page
   router.get('/users/:username', function(req, res, next){
 		Tweet.findAll({
 			include: [{
-						model: User,
-			      where: {name: req.params.username}
-							 }]
+				model: User,
+				where: {name: req.params.username}
+	  	}]
 		}) 
 		.then(function (tweets) {
 			console.log(tweets);
-			res.render('index', {
+			//res.render('index', {
+			res.render(req.session.loggedIn ? 'user': "index", {
 				title: 'Twitter.js',
 				tweets: tweets,
-				showForm: true,
-				username: req.params.username
+				user: req.session.user
+		//		showForm: loggedIn,
+			//	username: req.params.username
 			});
 		});
 	});
@@ -55,33 +70,31 @@ module.exports = function makeRouterWithSockets (io) {
 			res.render('index', {
 				title: 'Twitter.js',
 				tweets: tweets,
-				showForm: true,
+				showForm: loggedIn,
 			});
 		});
   });
 
   // create a new tweet
   router.post('/tweets', function(req, res, next){
-		var obj = {};
-		User
-    .findOrCreate({
-				where: {
-					name: req.body.name,
-			  },
-				defaults: {
-					pictureUrl: "http://lorempixel.com/40/40"
-				}
+		/*
+		var obj;
+		User.findOrCreate({
+			where: {
+				name: req.body.name,
+			},
+			defaults: {
+				pictureUrl: "http://lorempixel.com/40/40"
+			}
 		})
-	  .then(function(user) {
-			//console.log("user Object", user);
-			obj = user[0];
+	  .spread(function(user) {
+			obj = user;
       return Tweet.create({
 				content: req.body.text,
 				UserId: obj.id
 			});
 		})
 		.then(function (newTweet) {
-      //console.log(obj);
       io.sockets.emit('new_tweet', {
 			  content: newTweet.content,
 				id: newTweet.id,
@@ -89,10 +102,22 @@ module.exports = function makeRouterWithSockets (io) {
 			});
       res.redirect('/');
 		});
+		*/
+    Tweet.create({
+				content: req.body.text,
+				UserId: req.session.user.id
+		})
+		.then(function (newTweet) {
+      io.sockets.emit('new_tweet', {
+			  content: newTweet.content,
+				id: newTweet.id,
+        User: req.session.user
+			});
+      res.redirect('/');
+		});
 
 
 
- //   var newTweet = tweetBank.add(req.body.name, req.body.text);
   });
 
   // // replaced this hard-coded route with general static routing in app.js
