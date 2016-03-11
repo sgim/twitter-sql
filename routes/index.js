@@ -3,7 +3,6 @@ var express = require('express');
 var router = express.Router();
 var tweetBank = require("../models/index");
 var Tweet = tweetBank.Tweet, User = tweetBank.User;
-//var tweetBank = require('../tweetBank');
 
 module.exports = function makeRouterWithSockets (io) {
 
@@ -18,7 +17,8 @@ module.exports = function makeRouterWithSockets (io) {
 				tweets: tweets,
 				user: req.session.user
 			});
-		});
+		})
+		.catch(console.error);
   }
   
 
@@ -34,7 +34,8 @@ module.exports = function makeRouterWithSockets (io) {
       req.session.loggedIn = !req.session.loggedIn;
       res.redirect('/');
 
-		});
+		})
+	  .catch(console.error);
 	});
 
   // single-user page
@@ -47,15 +48,13 @@ module.exports = function makeRouterWithSockets (io) {
 		}) 
 		.then(function (tweets) {
 			console.log(tweets);
-			//res.render('index', {
 			res.render(req.session.loggedIn ? 'user': "index", {
 				title: 'Twitter.js',
 				tweets: tweets,
 				user: req.session.user
-		//		showForm: loggedIn,
-			//	username: req.params.username
 			});
-		});
+		})
+		.catch(console.error);
 	});
 
   // single-tweet page
@@ -68,13 +67,17 @@ module.exports = function makeRouterWithSockets (io) {
 			console.log(tweets);
 			res.render('index', {
 				title: 'Twitter.js',
-				tweets: tweets,
-				//showForm: loggedIn,
+				tweets: tweets
 			});
-		});
+		})
+		.catch(console.error);
   });
 
   // create a new tweet
+	// NOTE FROM ARI: Currently broken. makes a tweet appear
+	// on all other user's pages no matter what page they are on
+	// e.g. on an individual user's page, this new tweet will
+	// appear even if it belongs to a different user
   router.post('/tweets', function(req, res, next){
 		/*
 		var obj;
@@ -103,8 +106,8 @@ module.exports = function makeRouterWithSockets (io) {
 		});
 		*/
     Tweet.create({
-				content: req.body.text,
-				UserId: req.session.user.id
+			content: req.body.text,
+			UserId: req.session.user.id
 		})
 		.then(function (newTweet) {
       io.sockets.emit('new_tweet', {
@@ -113,7 +116,8 @@ module.exports = function makeRouterWithSockets (io) {
         User: req.session.user
 			});
       res.redirect('/');
-		});
+		})
+		.catch(console.error);
   });
 
   // // replaced this hard-coded route with general static routing in app.js
